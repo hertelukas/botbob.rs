@@ -3,11 +3,30 @@ mod models;
 mod schema;
 use diesel::prelude::*;
 use diesel::SqliteConnection;
+use models::User;
 use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::async_trait;
+use poise::serenity_prelude::EventHandler;
+use poise::serenity_prelude::Message;
+use schema::users;
 
 struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
+
+struct Handler;
+
+#[async_trait]
+impl EventHandler for Handler {
+    async fn message(&self, ctx: poise::serenity_prelude::Context, msg: Message) {
+        use crate::schema::users::dsl::*;
+        let connection = &mut establish_connection();
+        diesel::update(users.find(msg.author.id.get() as i64))
+            .set(points.eq(points + 1))
+            .execute(connection)
+            .unwrap();
+    }
+}
 
 pub fn establish_connection() -> SqliteConnection {
     dotenvy::dotenv().ok();
@@ -48,6 +67,7 @@ async fn main() {
 
     let client = serenity::ClientBuilder::new(token, intents)
         .framework(framework)
+        .event_handler(Handler)
         .await;
     client.unwrap().start().await.unwrap();
 }
