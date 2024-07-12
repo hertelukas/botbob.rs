@@ -22,6 +22,28 @@ pub async fn help(
 }
 
 #[poise::command(prefix_command, slash_command)]
+pub async fn leaders(ctx: Context<'_>) -> Result<(), Error> {
+    use crate::schema::users::dsl::*;
+    let connection = &mut crate::establish_connection();
+
+    let gamblers: Vec<User> = users
+        .order(points.desc())
+        .limit(5)
+        .select(User::as_select())
+        .load(connection)
+        .expect("Error loading leaders");
+
+    let mut msg: String = "Leaderboard\n".to_owned();
+
+    for gambler in gamblers {
+        msg.push_str(format!("{}: {} points\n", gambler.username, gambler.points).as_str());
+    }
+
+    ctx.say(msg.as_str()).await?;
+    Ok(())
+}
+
+#[poise::command(prefix_command, slash_command)]
 pub async fn points(
     ctx: Context<'_>,
     #[description = "Selected user"] user: Option<serenity::User>,
