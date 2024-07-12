@@ -1,6 +1,7 @@
 mod commands;
 mod models;
 mod schema;
+use diesel::connection::SimpleConnection;
 use diesel::prelude::*;
 use diesel::SqliteConnection;
 use models::User;
@@ -32,8 +33,10 @@ pub fn establish_connection() -> SqliteConnection {
     dotenvy::dotenv().ok();
     let database_url = std::env::var("DATABASE_URL").expect("missing DATABASE_URL");
 
-    SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+    let mut s = SqliteConnection::establish(&database_url)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
+    let _ = s.batch_execute("PRAGMA busy_timeout = 4000;");
+    s
 }
 
 #[tokio::main]
