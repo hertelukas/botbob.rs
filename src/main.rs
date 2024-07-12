@@ -4,12 +4,10 @@ mod schema;
 use diesel::connection::SimpleConnection;
 use diesel::prelude::*;
 use diesel::SqliteConnection;
-use models::User;
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::async_trait;
 use poise::serenity_prelude::EventHandler;
 use poise::serenity_prelude::Message;
-use schema::users;
 
 struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -19,7 +17,7 @@ struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn message(&self, ctx: poise::serenity_prelude::Context, msg: Message) {
+    async fn message(&self, _ctx: poise::serenity_prelude::Context, msg: Message) {
         use crate::schema::users::dsl::*;
         let connection = &mut establish_connection();
         diesel::update(users.find(msg.author.id.get() as i64))
