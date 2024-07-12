@@ -21,7 +21,32 @@ pub async fn help(
     Ok(())
 }
 
-#[poise::command(prefix_command)]
+#[poise::command(prefix_command, slash_command)]
+pub async fn points(
+    ctx: Context<'_>,
+    #[description = "Selected user"] user: Option<serenity::User>,
+) -> Result<(), Error> {
+    use crate::schema::users::dsl::*;
+    let connection = &mut crate::establish_connection();
+    let u = user.as_ref().unwrap_or_else(|| ctx.author());
+
+    let gambler: Vec<User> = users
+        .filter(id.eq(u.id.get() as i64))
+        .select(User::as_select())
+        .load(connection)
+        .expect("Error loading user");
+
+    let response;
+    match gambler.first() {
+        Some(g) => response = format!("{} has {} points", u.name, g.points),
+        None => response = format!("User not found :("),
+    }
+
+    ctx.say(response).await?;
+    Ok(())
+}
+
+#[poise::command(prefix_command, slash_command)]
 pub async fn gamble(
     ctx: Context<'_>,
     #[description = "How much to gamble (number or all)"] amount: String,
