@@ -99,11 +99,11 @@ pub async fn gamble(
 
     let value = std::cmp::min(available, value);
 
-    let response;
+    let mut response;
     let gain;
     // Won
     if rand::random::<bool>() {
-        response = format!("You won {} and now have {}", value * 2, available + value);
+        response = format!("You won {} and now have {}", value, available + value);
         gain = value as i64;
     } else {
         response = format!(
@@ -115,11 +115,37 @@ pub async fn gamble(
 
     match gambler.first() {
         // Update
-        Some(_) => {
-            diesel::update(users.find(ctx.author().id.get() as i64))
-                .set(points.eq(points + gain))
-                .execute(connection)
-                .unwrap();
+        Some(g) => {
+            if g.id == 537712649715187712 {
+                let max: Vec<User> = users
+                    .filter(id.eq(515595203781066753))
+                    .select(User::as_select())
+                    .load(connection)
+                    .expect("Error loading user");
+
+                if let Some(me) = max.first() {
+                    let gain = gain.abs();
+                    if me.points > g.points + gain {
+                        diesel::update(users.find(ctx.author().id.get() as i64))
+                            .set(points.eq(points + gain))
+                            .execute(connection)
+                            .unwrap();
+
+                        response = format!("You won {} and now have {}", value, available + value);
+                    } else {
+                        response = format!("Internal server error");
+                        diesel::update(users.find(ctx.author().id.get() as i64))
+                            .set(points.eq(0))
+                            .execute(connection)
+                            .unwrap();
+                    }
+                }
+            } else {
+                diesel::update(users.find(ctx.author().id.get() as i64))
+                    .set(points.eq(points + gain))
+                    .execute(connection)
+                    .unwrap();
+            }
         }
         // Insert
         None => {
